@@ -62,7 +62,7 @@ jobs:
       - name: Build Release APK
         working-directory: ${{ env.PROJECT_DIR }}
         env:
-          KEYSTORE_PATH: ${{ env.PROJECT_DIR }}/my-upload-key.jks
+          KEYSTORE_PATH: ${{ github.workspace }}/${{ env.PROJECT_DIR }}/my-upload-key.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
