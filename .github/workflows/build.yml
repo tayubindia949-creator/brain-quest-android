@@ -1,5 +1,5 @@
 
-name: Build Brain Quest APK
+name: Build Brain Quest Release APK
 
 on:
   workflow_dispatch:
@@ -51,23 +51,25 @@ jobs:
         with:
           gradle-version: '9.3.1'
 
-      - name: Create debug signing key
+      - name: Decode release signing key
         working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          keytool -genkeypair -v \
-            -keystore debug.keystore \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US" \
-            -keyalg RSA -keysize 2048 -validity 10000
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > my-upload-key.jks
+          test -s my-upload-key.jks
 
-      - name: Build APK
+      - name: Build Release APK
         working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle --no-daemon :app:assembleDebug
+        env:
+          KEYSTORE_PATH: ${{ env.PROJECT_DIR }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          gradle --no-daemon :app:assembleRelease
 
-      - name: Upload APK
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Brain-Quest-APK
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          name: Brain-Quest-Release-APK
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/release/*.apk
