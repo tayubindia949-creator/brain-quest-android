@@ -28,6 +28,28 @@ jobs:
           test -f "$PROJECT_DIR/settings.gradle.kts"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
+      - name: Add Unity Ads SDK
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path("app/build.gradle.kts")
+          s = p.read_text()
+          dep = 'implementation("com.unity3d.ads:unity-ads:4.22.0")'
+
+          if dep not in s:
+              match = re.search(r'(?m)^dependencies\s*\{', s)
+              if not match:
+                  raise SystemExit("ERROR: dependencies block not found")
+              pos = match.end()
+              s = s[:pos] + "\n    " + dep + s[pos:]
+              p.write_text(s)
+
+          print("Unity Ads SDK dependency ready")
+          PY
+
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
