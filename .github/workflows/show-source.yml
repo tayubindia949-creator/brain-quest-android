@@ -1,4 +1,3 @@
-
 name: Show Brain Quest Ad Files
 
 on:
@@ -16,10 +15,19 @@ jobs:
           mkdir -p /tmp/brainquest
           unzip -q brain-quest-admob-test.zip -d /tmp/brainquest
 
-      - name: Show Reward and Hint Code
+      - name: Show Android Ad Setup Files
         run: |
-          echo "===== GAME REWARD AND HINT CODE ====="
-          find /tmp/brainquest -name GameHubViewModel.kt -exec grep -n -i -E -C 12 "adController|preloadRewardedAd|hint|reward" {} \;
+          echo "===== APP GRADLE ====="
+          find /tmp/brainquest -path '*/app/build.gradle.kts' -exec cat {} \;
+
+          echo "===== VERSION CATALOG ====="
+          find /tmp/brainquest -path '*/gradle/libs.versions.toml' -exec cat {} \;
+
+          echo "===== SETTINGS GRADLE ====="
+          find /tmp/brainquest -name settings.gradle.kts -exec cat {} \;
+
+          echo "===== AD INTEGRATION BRIDGE ====="
+          find /tmp/brainquest -name AdIntegrationBridge.kt -exec cat {} \;
 
           echo "===== MAIN ACTIVITY ====="
           find /tmp/brainquest -name MainActivity.kt -exec cat {} \;
