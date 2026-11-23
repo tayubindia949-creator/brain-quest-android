@@ -1,0 +1,28 @@
+
+name: Show Brain Quest Source
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get repository
+        uses: actions/checkout@v4
+
+      - name: Extract project ZIP
+        run: |
+          mkdir -p /tmp/brainquest
+          unzip -q brain-quest-admob-test.zip -d /tmp/brainquest
+
+      - name: Find source files
+        run: |
+          echo "===== FILE LIST ====="
+          find /tmp/brainquest -type f \( -name "MainActivity.kt" -o -name "build.gradle.kts" -o -name "AndroidManifest.xml" \)
+          echo "===== MAIN ACTIVITY ====="
+          find /tmp/brainquest -name MainActivity.kt -exec sh -c 'cat "$1"' _ {} \;
+          echo "===== APP GRADLE ====="
+          find /tmp/brainquest -path "*/app/build.gradle.kts" -exec sh -c 'cat "$1"' _ {} \;
+          echo "===== MANIFEST ====="
+          find /tmp/brainquest -name AndroidManifest.xml -exec sh -c 'cat "$1"' _ {} \;
