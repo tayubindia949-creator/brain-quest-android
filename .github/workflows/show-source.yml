@@ -1,5 +1,5 @@
 
-name: Show Brain Quest Source
+name: Show Brain Quest Ad Files
 
 on:
   workflow_dispatch:
@@ -16,13 +16,19 @@ jobs:
           mkdir -p /tmp/brainquest
           unzip -q brain-quest-admob-test.zip -d /tmp/brainquest
 
-      - name: Find source files
+      - name: Show Ad Controller and Dependencies
         run: |
-          echo "===== FILE LIST ====="
-          find /tmp/brainquest -type f \( -name "MainActivity.kt" -o -name "build.gradle.kts" -o -name "AndroidManifest.xml" \)
-          echo "===== MAIN ACTIVITY ====="
-          find /tmp/brainquest -name MainActivity.kt -exec sh -c 'cat "$1"' _ {} \;
+          echo "===== AD PACKAGE FILES ====="
+          find /tmp/brainquest -type f -path "*/com/example/ad/*.kt" -print -exec cat {} \;
+
+          echo "===== AD REWARD REFERENCES ====="
+          grep -R -n "AdRewardController\|NoOpAdRewardController" /tmp/brainquest --include="*.kt" || true
+
           echo "===== APP GRADLE ====="
-          find /tmp/brainquest -path "*/app/build.gradle.kts" -exec sh -c 'cat "$1"' _ {} \;
-          echo "===== MANIFEST ====="
-          find /tmp/brainquest -name AndroidManifest.xml -exec sh -c 'cat "$1"' _ {} \;
+          find /tmp/brainquest -path "*/app/build.gradle.kts" -exec cat {} \;
+
+          echo "===== VERSION CATALOG ====="
+          find /tmp/brainquest -path "*/gradle/libs.versions.toml" -exec cat {} \;
+
+          echo "===== ANDROID MANIFEST ====="
+          find /tmp/brainquest -name AndroidManifest.xml -exec cat {} \;
