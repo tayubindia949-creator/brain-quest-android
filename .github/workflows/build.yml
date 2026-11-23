@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - 'brain-quest.zip'
+      - 'brain-quest-admob-test.zip'
       - '.github/workflows/build.yml'
 
 jobs:
@@ -22,7 +23,7 @@ jobs:
       - name: Extract Android project
         run: |
           mkdir extracted
-          unzip -q brain-quest.zip -d extracted
+          unzip -q brain-quest-admob-test.zip -d extracted
           PROJECT_DIR=$(dirname "$(find extracted -name settings.gradle.kts -print -quit)")
           test -f "$PROJECT_DIR/settings.gradle.kts"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
