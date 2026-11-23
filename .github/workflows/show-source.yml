@@ -1,3 +1,4 @@
+
 name: Show Brain Quest Ad Files
 
 on:
@@ -20,19 +21,14 @@ jobs:
           echo "===== APP GRADLE ====="
           find /tmp/brainquest -path '*/app/build.gradle.kts' -exec cat {} \;
 
-          echo "===== VERSION CATALOG ====="
-          find /tmp/brainquest -path '*/gradle/libs.versions.toml' -exec cat {} \;
-
-          echo "===== SETTINGS GRADLE ====="
-          find /tmp/brainquest -name settings.gradle.kts -exec cat {} \;
-
           echo "===== AD INTEGRATION BRIDGE ====="
           find /tmp/brainquest -name AdIntegrationBridge.kt -exec cat {} \;
 
           echo "===== MAIN ACTIVITY ====="
           find /tmp/brainquest -name MainActivity.kt -exec cat {} \;
 
-          echo "===== ANDROID MANIFEST ====="
-          find /tmp/brainquest -name AndroidManifest.xml -exec cat {} \;
+          echo "===== GAME HUB VIEWMODEL ====="
+          find /tmp/brainquest -name GameHubViewModel.kt -exec cat {} \;
+
           echo "===== REPOSITORY HINT FUNCTIONS ====="
-          find /tmp/brainquest -name BrainQuestRepository.kt -exec grep -n -i -E -C 15 "useHint|hint" {} \;
+          find /tmp/brainquest -name BrainQuestRepository.kt -exec grep -n -i -E -C 15 "useHint|grantAdBonusReward|hint" {} \;
