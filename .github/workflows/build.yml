@@ -38,16 +38,164 @@ jobs:
           p = Path("app/build.gradle.kts")
           s = p.read_text()
           dep = 'implementation("com.unity3d.ads:unity-ads:4.22.0")'
-
           if dep not in s:
               match = re.search(r'(?m)^dependencies\s*\{', s)
               if not match:
-                  raise SystemExit("ERROR: dependencies block not found")
+                  raise SystemExit("dependencies block not found")
               pos = match.end()
               s = s[:pos] + "\n    " + dep + s[pos:]
               p.write_text(s)
 
-          print("Unity Ads SDK dependency ready")
+          root = Path(".")
+          bridge = next(root.rglob("AdIntegrationBridge.kt"))
+          activity = next(root.rglob("MainActivity.kt"))
+          vm = next(root.rglob("GameHubViewModel.kt"))
+
+          bridge.write_text("""package com.example.ad
+
+          import android.app.Activity
+          import android.content.Context
+          import java.lang.ref.WeakReference
+          import com.unity3d.ads.*
+
+          interface AdRewardController {
+              val isAdsEnabled: Boolean
+              fun preloadRewardedAd()
+              fun showRewardedAd(onRewarded: () -> Unit, onUnavailable: () -> Unit)
+          }
+
+          class NoOpAdRewardController : AdRewardController {
+              override val isAdsEnabled = false
+              override fun preloadRewardedAd() {}
+              override fun showRewardedAd(onRewarded: () -> Unit, onUnavailable: () -> Unit) {
+                  onUnavailable()
+              }
+          }
+
+          @OptIn(UnityAdsExperimental::class)
+          class UnityAdsRewardController(activity: Activity) : AdRewardController {
+              companion object {
+                  private const val GAME_ID = "800449182"
+                  private const val PLACEMENT_ID = "BP_Rewarded_Android"
+              }
+
+              private val activityRef = WeakReference(activity)
+              private val appContext: Context = activity.applicationContext
+              @Volatile private var initialized = false
+              @Volatile private var loading = false
+              @Volatile private var rewardedAd: RewardedAd? = null
+
+              override val isAdsEnabled: Boolean
+                  get() = initialized
+
+              init {
+                  val config = InitializationConfiguration.Builder(GAME_ID)
+                      .withContext(appContext)
+                      .withTestMode(true)
+                      .build()
+
+                  UnityAds.initialize(config, InitializationListener { error ->
+                      initialized = error == null
+                      if (initialized) preloadRewardedAd()
+                  })
+              }
+
+              @Synchronized
+              override fun preloadRewardedAd() {
+                  if (!initialized || loading || rewardedAd != null) return
+                  loading = true
+                  val config = LoadConfiguration.Builder(PLACEMENT_ID).build()
+                  RewardedAd.load(config, RewardedLoadListener { ad, error ->
+                      loading = false
+                      rewardedAd = ad
+                  })
+              }
+
+              override fun showRewardedAd(
+                  onRewarded: () -> Unit,
+                  onUnavailable: () -> Unit
+              ) {
+                  val activity = activityRef.get()
+                  val ad = rewardedAd
+
+                  if (activity == null || ad == null) {
+                      onUnavailable()
+                      preloadRewardedAd()
+                      return
+                  }
+
+                  rewardedAd = null
+                  var rewardGiven = false
+
+                  ad.show(
+                      activity,
+                      ShowConfiguration.Builder().build(),
+                      object : RewardedShowListener {
+                          override fun onStarted(unityAd: RewardedAd) {}
+                          override fun onClicked(unityAd: RewardedAd) {}
+
+                          override fun onRewarded(unityAd: RewardedAd) {
+                              if (!rewardGiven) {
+                                  rewardGiven = true
+                                  onRewarded()
+                              }
+                          }
+
+                          override fun onCompleted(
+                              unityAd: RewardedAd,
+                              state: ShowFinishState
+                          ) {
+                              preloadRewardedAd()
+                          }
+
+                          override fun onFailed(
+                              unityAd: RewardedAd,
+                              error: UnityAdsError
+                          ) {
+                              onUnavailable()
+                              preloadRewardedAd()
+                          }
+                      }
+                  )
+              }
+          }
+          """)
+
+          s = activity.read_text()
+          s = s.replace(
+              "import com.example.ad.NoOpAdRewardController",
+              "import com.example.ad.UnityAdsRewardController"
+          )
+          s = s.replace(
+              "val adController = NoOpAdRewardController()",
+              "val adController = UnityAdsRewardController(this)"
+          )
+          if "UnityAdsRewardController(this)" not in s:
+              raise SystemExit("MainActivity update failed")
+          activity.write_text(s)
+
+          s = vm.read_text()
+          pattern = r'if \(!consumed\) \{.*?return@launch\s*\}'
+          replacement = """if (!consumed) {
+                      adController.showRewardedAd(
+                          onRewarded = {
+                              viewModelScope.launch {
+                                  repository.grantAdBonusReward(coins = 0, hints = 1)
+                                  requestHint()
+                              }
+                          },
+                          onUnavailable = {
+                              _statusToast.value = "Rewarded ad is not ready. Please try again shortly."
+                          }
+                      )
+                      return@launch
+                  }"""
+          s, count = re.subn(pattern, replacement, s, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit("requestHint update failed")
+          vm.write_text(s)
+
+          print("Unity rewarded ad integration patch applied")
           PY
 
       - name: Set up Java
