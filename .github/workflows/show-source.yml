@@ -16,19 +16,13 @@ jobs:
           mkdir -p /tmp/brainquest
           unzip -q brain-quest-admob-test.zip -d /tmp/brainquest
 
-      - name: Show Ad Controller and Dependencies
+      - name: Show Reward and Hint Code
         run: |
-          echo "===== AD PACKAGE FILES ====="
-          find /tmp/brainquest -type f -path "*/com/example/ad/*.kt" -print -exec cat {} \;
+          echo "===== GAME REWARD AND HINT CODE ====="
+          find /tmp/brainquest -name GameHubViewModel.kt -exec grep -n -i -E -C 12 "adController|preloadRewardedAd|hint|reward" {} \;
 
-          echo "===== AD REWARD REFERENCES ====="
-          grep -R -n "AdRewardController\|NoOpAdRewardController" /tmp/brainquest --include="*.kt" || true
-
-          echo "===== APP GRADLE ====="
-          find /tmp/brainquest -path "*/app/build.gradle.kts" -exec cat {} \;
-
-          echo "===== VERSION CATALOG ====="
-          find /tmp/brainquest -path "*/gradle/libs.versions.toml" -exec cat {} \;
+          echo "===== MAIN ACTIVITY ====="
+          find /tmp/brainquest -name MainActivity.kt -exec cat {} \;
 
           echo "===== ANDROID MANIFEST ====="
           find /tmp/brainquest -name AndroidManifest.xml -exec cat {} \;
