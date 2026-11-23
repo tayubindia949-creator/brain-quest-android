@@ -34,3 +34,5 @@ jobs:
 
           echo "===== ANDROID MANIFEST ====="
           find /tmp/brainquest -name AndroidManifest.xml -exec cat {} \;
+          echo "===== REPOSITORY HINT FUNCTIONS ====="
+          find /tmp/brainquest -name BrainQuestRepository.kt -exec grep -n -i -E -C 15 "useHint|hint" {} \;
