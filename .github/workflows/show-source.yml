@@ -16,19 +16,17 @@ jobs:
           mkdir -p /tmp/brainquest
           unzip -q brain-quest-admob-test.zip -d /tmp/brainquest
 
-      - name: Show Android Ad Setup Files
+      - name: Show requestHint function
         run: |
-          echo "===== APP GRADLE ====="
-          find /tmp/brainquest -path '*/app/build.gradle.kts' -exec cat {} \;
-
-          echo "===== AD INTEGRATION BRIDGE ====="
-          find /tmp/brainquest -name AdIntegrationBridge.kt -exec cat {} \;
-
-          echo "===== MAIN ACTIVITY ====="
-          find /tmp/brainquest -name MainActivity.kt -exec cat {} \;
-
-          echo "===== GAME HUB VIEWMODEL ====="
-          find /tmp/brainquest -name GameHubViewModel.kt -exec cat {} \;
-
-          echo "===== REPOSITORY HINT FUNCTIONS ====="
-          find /tmp/brainquest -name BrainQuestRepository.kt -exec grep -n -i -E -C 15 "useHint|grantAdBonusReward|hint" {} \;
+          FILE=$(find /tmp/brainquest -name GameHubViewModel.kt -print -quit)
+          test -n "$FILE"
+          python3 - "$FILE" <<'PY'
+          import sys
+          from pathlib import Path
+          s = Path(sys.argv[1]).read_text()
+          start = s.find("fun requestHint()")
+          if start < 0:
+              raise SystemExit("requestHint function not found")
+          next_fn = s.find("\n    fun ", start + 1)
+          print(s[start:next_fn if next_fn >= 0 else len(s)])
+          PY
